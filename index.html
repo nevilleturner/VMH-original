@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VMH Flashcards</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://js.puter.com/v2/" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">VMH Flashcards</div>
+    <p class="tagline">Study smarter</p>
+    <div class="divider"></div>
+</header>
+
+<div class="mode-section">
+    <p class="mode-label">Select Mode</p>
+    <div class="mode-tabs">
+        <button class="mode-tab active" data-mode="vocab" onclick="switchMode('vocab')"> Vocabulary</button>
+        <button class="mode-tab" data-mode="math" onclick="switchMode('math')">Mathematics</button>
+        <button class="mode-tab" data-mode="history" onclick="switchMode('history')">History</button>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- ══════ VOCAB PANEL ══════ -->
+    <div class="panel active" id="panel-vocab">
+        <div class="creator-card" style="position:relative">
+            <div class="loading-overlay" id="loading-vocab">
+                <div class="spinner"></div>
+                <p class="loading-text">Consulting the lexicon…</p>
+            </div>
+
+            <!-- ── Input mode toggle ── -->
+            <div class="vocab-mode-toggle">
+                <span class="vocab-mode-toggle-label">Card back</span>
+                <div class="toggle-pill">
+                    <button class="toggle-pill-btn active" id="toggle-ai"   onclick="setVocabInputMode('ai')">AI Generate</button>
+                    <button class="toggle-pill-btn"        id="toggle-manual" onclick="setVocabInputMode('manual')">Manual</button>
+                </div>
+            </div>
+
+            <div class="input-divider"></div>
+
+            <!-- ── Word input + generate button (AI mode) ── -->
+            <div class="input-row" id="vocab-ai-row">
+                <div class="input-group">
+                    <label class="input-label" for="vocab-input">Enter a word</label>
+                    <input type="text" id="vocab-input" class="text-input" placeholder="e.g. ephemeral, sonder, petrichor…" />
+                </div>
+                <button class="generate-btn" id="vocab-generate-btn" onclick="generateVocab()">Generate →</button>
+            </div>
+
+            <!-- ── Manual back input ── -->
+            <div class="manual-back-area" id="vocab-manual-area">
+                <div class="input-row" style="margin-bottom:0.75rem">
+                    <div class="input-group">
+                        <label class="input-label" for="vocab-manual-word">Word / Front of card</label>
+                        <input type="text" id="vocab-manual-word" class="text-input" placeholder="e.g. ephemeral" />
+                    </div>
+                </div>
+                <div class="manual-back-grid">
+                    <div class="manual-field">
+                        <label class="input-label" for="manual-definition">Definition</label>
+                        <textarea id="manual-definition" class="manual-textarea" placeholder="Clear English definition…" rows="3"></textarea>
+                    </div>
+                    <div class="manual-field">
+                        <label class="input-label" for="manual-japanese">日本語 (Japanese)</label>
+                        <textarea id="manual-japanese" class="manual-textarea" placeholder="Japanese meaning + romaji…" rows="3"></textarea>
+                    </div>
+                    <div class="manual-field">
+                        <label class="input-label" for="manual-slang">Slang &amp; Usage</label>
+                        <textarea id="manual-slang" class="manual-textarea" placeholder="Informal or slang usage…" rows="2"></textarea>
+                    </div>
+                    <div class="manual-field">
+                        <label class="input-label" for="manual-etymology">Etymology</label>
+                        <textarea id="manual-etymology" class="manual-textarea" placeholder="Word origin / history…" rows="2"></textarea>
+                    </div>
+                    <div class="manual-field full-width">
+                        <label class="input-label" for="manual-related">Related Words</label>
+                        <input type="text" id="manual-related" class="text-input" placeholder="e.g. transient, fleeting, momentary…" />
+                    </div>
+                </div>
+                <div class="manual-actions">
+                    <button class="manual-create-btn" onclick="createManualVocabCard()">Create Card →</button>
+                </div>
+            </div>
+
+            <div class="error-msg" id="error-vocab"></div>
+        </div>
+
+        <div id="card-area-vocab" style="display:none">
+            <div class="card-scene">
+                <div class="card-wrap" id="card-vocab" onclick="flipCard('vocab')">
+                    <div class="card-face card-front">
+                        <span class="card-mode-badge">Vocabulary</span>
+                        <p class="card-front-word" id="card-vocab-word">—</p>
+                        <p class="card-front-sub">Click to reveal</p>
+                        <span class="flip-hint">↻ flip</span>
+                    </div>
+                    <div class="card-face card-back">
+                        <span class="card-mode-badge">Vocabulary</span>
+                        <div class="answer-content" id="card-vocab-back"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-actions">
+                <button class="save-btn" id="save-vocab-btn" onclick="saveCard('vocab')">＋ Save to Deck</button>
+            </div>
+        </div>
+
+        <div class="deck-section">
+            <div class="section-header">
+                <h2 class="section-title">Your Vocab Deck</h2>
+                <div class="section-line"></div>
+                <span class="deck-count" id="vocab-deck-count">0 cards</span>
+            </div>
+            <div class="deck-grid" id="vocab-deck"></div>
+        </div>
+    </div>
+
+    <!-- ══════ MATH PANEL ══════ -->
+    <div class="panel" id="panel-math">
+        <div class="creator-card" style="position:relative">
+            <div class="loading-overlay" id="loading-math">
+                <div class="spinner"></div>
+                <p class="loading-text">Deriving the formula…</p>
+            </div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label class="input-label" for="math-input">Theorem or formula name</label>
+                    <input type="text" id="math-input" class="text-input" placeholder="e.g. Pythagorean theorem, Euler's identity…" />
+                </div>
+                <button class="generate-btn" onclick="generateMath()">Generate →</button>
+            </div>
+            <div class="error-msg" id="error-math"></div>
+        </div>
+
+        <div id="card-area-math" style="display:none">
+            <div class="card-scene">
+                <div class="card-wrap" id="card-math" onclick="flipCard('math')">
+                    <div class="card-face card-front">
+                        <span class="card-mode-badge">Mathematics</span>
+                        <p class="card-front-word" id="card-math-word">—</p>
+                        <p class="card-front-sub">Click to reveal formula</p>
+                        <span class="flip-hint">↻ flip</span>
+                    </div>
+                    <div class="card-face card-back">
+                        <span class="card-mode-badge">Mathematics</span>
+                        <div class="answer-content" id="card-math-back"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-actions">
+                <button class="save-btn" id="save-math-btn" onclick="saveCard('math')">＋ Save to Deck</button>
+            </div>
+        </div>
+
+        <div class="deck-section">
+            <div class="section-header">
+                <h2 class="section-title">Your Formula Deck</h2>
+                <div class="section-line"></div>
+                <span class="deck-count" id="math-deck-count">0 cards</span>
+            </div>
+            <div class="deck-grid" id="math-deck"></div>
+        </div>
+    </div>
+
+    <!-- ══════ HISTORY PANEL ══════ -->
+    <div class="panel" id="panel-history">
+        <div class="timetable-toggle">
+            <button class="sub-tab active" onclick="switchHistoryView('flashcard')">Flashcard</button>
+            <button class="sub-tab" onclick="switchHistoryView('timetable')">Timetable</button>
+        </div>
+
+        <div id="history-flashcard-view">
+            <div class="creator-card" style="position:relative">
+                <div class="loading-overlay" id="loading-history">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Searching the archives…</p>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label class="input-label" for="history-input">Historical event or occasion</label>
+                        <input type="text" id="history-input" class="text-input" placeholder="e.g. Fall of Rome, Moon Landing, Battle of Thermopylae…" />
+                    </div>
+                    <button class="generate-btn" onclick="generateHistory()">Generate →</button>
+                </div>
+                <div class="error-msg" id="error-history"></div>
+            </div>
+
+            <div id="card-area-history" style="display:none">
+                <div class="card-scene">
+                    <div class="card-wrap" id="card-history" onclick="flipCard('history')">
+                        <div class="card-face card-front">
+                            <span class="card-mode-badge">History</span>
+                            <p class="card-front-word" id="card-history-word">—</p>
+                            <p class="card-front-sub">Click to reveal</p>
+                            <span class="flip-hint">↻ flip</span>
+                        </div>
+                        <div class="card-face card-back">
+                            <span class="card-mode-badge">History</span>
+                            <div class="answer-content" id="card-history-back"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="save-btn" id="save-history-btn" onclick="saveCard('history')">＋ Save to Deck</button>
+                </div>
+            </div>
+
+            <div class="deck-section">
+                <div class="section-header">
+                    <h2 class="section-title">Your History Deck</h2>
+                    <div class="section-line"></div>
+                    <span class="deck-count" id="history-deck-count">0 cards</span>
+                </div>
+                <div class="deck-grid" id="history-deck"></div>
+            </div>
+        </div>
+
+        <div id="history-timetable-view" style="display:none">
+            <div class="section-header">
+                <h2 class="section-title">Chronological Timetable</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="timeline" id="timeline-container">
+                <div class="empty-timeline">No history cards yet. Generate some flashcards and save them to build your timetable.</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────
+const state = {
+    currentMode: 'vocab',
+    vocabInputMode: 'ai',   // 'ai' | 'manual'
+    currentCard: { vocab: null, math: null, history: null },
+    decks: { vocab: [], math: [], history: [] }
+};
+
+// ─── Vocab Input Mode Toggle ──────────────────────────────
+function setVocabInputMode(mode) {
+    state.vocabInputMode = mode;
+
+    document.getElementById('toggle-ai').classList.toggle('active', mode === 'ai');
+    document.getElementById('toggle-manual').classList.toggle('active', mode === 'manual');
+
+    const aiRow     = document.getElementById('vocab-ai-row');
+    const manualArea = document.getElementById('vocab-manual-area');
+
+    if (mode === 'ai') {
+        aiRow.style.display = 'flex';
+        manualArea.classList.remove('visible');
+    } else {
+        aiRow.style.display = 'none';
+        manualArea.classList.add('visible');
+    }
+
+    clearError('vocab');
+}
+
+// ─── Create Manual Vocab Card ─────────────────────────────
+function createManualVocabCard() {
+    const word = document.getElementById('vocab-manual-word').value.trim();
+    if (!word) { showError('vocab', 'Please enter a word for the front of the card.'); return; }
+
+    const data = {
+        definition : document.getElementById('manual-definition').value.trim() || '—',
+        japanese   : document.getElementById('manual-japanese').value.trim()   || '—',
+        slang      : document.getElementById('manual-slang').value.trim()      || '—',
+        etymology  : document.getElementById('manual-etymology').value.trim()  || '—',
+        related    : document.getElementById('manual-related').value.trim()    || '—',
+    };
+
+    clearError('vocab');
+    state.currentCard.vocab = { word, data };
+    renderVocabCard(word, data);
+    document.getElementById('card-area-vocab').style.display = 'block';
+    document.getElementById('card-vocab').classList.remove('flipped');
+    document.getElementById('save-vocab-btn').disabled = false;
+    document.getElementById('save-vocab-btn').textContent = '＋ Save to Deck';
+}
+
+// ─── Mode Switching ───────────────────────────────────────
+function switchMode(mode) {
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${mode}`).classList.add('active');
+    state.currentMode = mode;
+}
+
+function switchHistoryView(view) {
+    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('history-flashcard-view').style.display = view === 'flashcard' ? 'block' : 'none';
+    document.getElementById('history-timetable-view').style.display = view === 'timetable'  ? 'block' : 'none';
+    if (view === 'timetable') renderTimeline();
+}
+
+// ─── Card Flip ────────────────────────────────────────────
+function flipCard(mode) {
+    document.getElementById(`card-${mode}`).classList.toggle('flipped');
+}
+
+// ─── API Key Management (not needed with Puter.js) ────────
+function handleApiKeyInput() {}
+function toggleKeyVis() {}
+function getApiKey() { return ''; }
+function initApiKeyUI() {}
+
+// ─── API Call (Puter.js — no API key needed) ──────────────
+async function callAI(systemPrompt, userPrompt) {
+    const response = await puter.ai.chat(
+        [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userPrompt }
+        ]
+    );
+
+    let text = '';
+    if (typeof response === 'string') {
+        text = response;
+    } else if (response?.message?.content) {
+        const c = response.message.content;
+        if (typeof c === 'string') text = c;
+        else if (Array.isArray(c)) text = c.map(b => b.text || '').join('');
+    } else if (response?.content) {
+        const c = response.content;
+        if (typeof c === 'string') text = c;
+        else if (Array.isArray(c)) text = c.map(b => b.text || '').join('');
+    } else if (response?.text) {
+        text = response.text;
+    } else {
+        text = JSON.stringify(response);
+    }
+
+    console.log('[VMC Flashcards] raw AI response:', text);
+    return text;
+}
+
+// ─── VOCAB ────────────────────────────────────────────────
+async function generateVocab() {
+    const word = document.getElementById('vocab-input').value.trim();
+    if (!word) return;
+    showLoading('vocab', true);
+    clearError('vocab');
+
+    const system = `You are a lexicographer. Respond ONLY with a JSON object (no markdown, no backticks).
+Schema: { "definition": string, "japanese": string, "slang": string, "etymology": string, "related": string }
+- definition: clear English definition (1-2 sentences)
+- japanese: meaning in Japanese (use Japanese characters + romaji)
+- slang: slang usage or informal context (1-2 sentences)
+- etymology: word origin/history (1-2 sentences)
+- related: 4-5 related or synonymous words (comma separated)`;
+
+    try {
+        const raw = await callAI(system, `Word: ${word}`);
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('No JSON found in response: ' + raw.slice(0, 200));
+        const parsed = JSON.parse(jsonMatch[0]);
+        state.currentCard.vocab = { word, data: parsed };
+        renderVocabCard(word, parsed);
+        document.getElementById('card-area-vocab').style.display = 'block';
+        document.getElementById('card-vocab').classList.remove('flipped');
+        document.getElementById('save-vocab-btn').disabled = false;
+        document.getElementById('save-vocab-btn').textContent = '＋ Save to Deck';
+    } catch(e) {
+        showError('vocab', 'Error: ' + e.message);
+        console.error('[vocab]', e);
+    }
+    showLoading('vocab', false);
+}
+
+function renderVocabCard(word, d) {
+    document.getElementById('card-vocab-word').textContent = word;
+    document.getElementById('card-vocab-back').innerHTML = `
+        <div class="answer-section">
+            <p class="answer-section-title">Definition</p>
+            <p class="answer-section-body">${d.definition}</p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">日本語 (Japanese)</p>
+            <p class="answer-section-body">${d.japanese}</p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">Slang &amp; Usage</p>
+            <p class="answer-section-body">${d.slang}</p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">Etymology</p>
+            <p class="answer-section-body"><em>${d.etymology}</em></p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">Related Words</p>
+            <p class="answer-section-body">${d.related}</p>
+        </div>
+    `;
+}
+
+// ─── MATH ─────────────────────────────────────────────────
+async function generateMath() {
+    const name = document.getElementById('math-input').value.trim();
+    if (!name) return;
+    showLoading('math', true);
+    clearError('math');
+
+    const system = `You are a mathematics professor. Respond ONLY with a JSON object (no markdown, no backticks).
+Schema: { "formula": string, "description": string, "variables": string, "context": string }
+- formula: the equation using standard notation (Unicode math symbols OK, e.g. ∫, √, π, Σ, ∞, ≠, ≤, ²)
+- description: what the formula states (1-2 sentences)
+- variables: what each variable/symbol means (use plain text, e.g. "a = leg 1, b = leg 2, c = hypotenuse")
+- context: field of math and typical applications (1 sentence)`;
+
+    try {
+        const raw = await callAI(system, `Formula/theorem: ${name}`);
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('No JSON found in response: ' + raw.slice(0, 200));
+        const parsed = JSON.parse(jsonMatch[0]);
+        state.currentCard.math = { word: name, data: parsed };
+        renderMathCard(name, parsed);
+        document.getElementById('card-area-math').style.display = 'block';
+        document.getElementById('card-math').classList.remove('flipped');
+        document.getElementById('save-math-btn').disabled = false;
+    } catch(e) {
+        showError('math', 'Error: ' + e.message);
+        console.error('[math]', e);
+    }
+    showLoading('math', false);
+}
+
+function renderMathCard(name, d) {
+    document.getElementById('card-math-word').textContent = name;
+    document.getElementById('card-math-back').innerHTML = `
+        <div class="answer-section">
+            <p class="answer-section-title">Formula</p>
+            <div class="formula-display">${d.formula}</div>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">What It States</p>
+            <p class="answer-section-body">${d.description}</p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">Variables</p>
+            <p class="answer-section-body">${d.variables}</p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">Context</p>
+            <p class="answer-section-body"><em>${d.context}</em></p>
+        </div>
+    `;
+}
+
+// ─── HISTORY ──────────────────────────────────────────────
+async function generateHistory() {
+    const event = document.getElementById('history-input').value.trim();
+    if (!event) return;
+    showLoading('history', true);
+    clearError('history');
+
+    const system = `You are a historian. Respond ONLY with a JSON object (no markdown, no backticks).
+Schema: { "date": string, "when": string, "summary": string, "details": string, "significance": string, "year_num": number }
+- date: specific date or period (e.g. "July 20, 1969" or "476 CE")
+- when: concise "when it happened" description (1 sentence)
+- summary: brief summary (1-2 sentences)
+- details: deeper historical context and key figures (2-3 sentences)
+- significance: why it matters historically (1-2 sentences)
+- year_num: approximate year as a number (negative for BCE, e.g. -44 for 44 BCE). If unknown or pre-history use 0.`;
+
+    try {
+        const raw = await callAI(system, `Historical event: ${event}`);
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('No JSON found in response: ' + raw.slice(0, 200));
+        const parsed = JSON.parse(jsonMatch[0]);
+        state.currentCard.history = { word: event, data: parsed };
+        renderHistoryCard(event, parsed);
+        document.getElementById('card-area-history').style.display = 'block';
+        document.getElementById('card-history').classList.remove('flipped');
+        document.getElementById('save-history-btn').disabled = false;
+    } catch(e) {
+        showError('history', 'Error: ' + e.message);
+        console.error('[history]', e);
+    }
+    showLoading('history', false);
+}
+
+function renderHistoryCard(event, d) {
+    document.getElementById('card-history-word').textContent = event;
+    document.getElementById('card-history-back').innerHTML = `
+        <div class="answer-section">
+            <p class="answer-section-title">Date</p>
+            <p class="answer-section-body"><strong>${d.date}</strong> — ${d.when}</p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">Summary</p>
+            <p class="answer-section-body">${d.summary}</p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">Details</p>
+            <p class="answer-section-body">${d.details}</p>
+        </div>
+        <div class="answer-section">
+            <p class="answer-section-title">Historical Significance</p>
+            <p class="answer-section-body"><em>${d.significance}</em></p>
+        </div>
+    `;
+}
+
+// ─── SAVE / DECK ──────────────────────────────────────────
+function saveCard(mode) {
+    const card = state.currentCard[mode];
+    if (!card) return;
+    if (state.decks[mode].find(c => c.word.toLowerCase() === card.word.toLowerCase())) return;
+    state.decks[mode].push({ ...card, id: Date.now() });
+    saveDecks();
+    renderDeck(mode);
+    document.getElementById(`save-${mode}-btn`).disabled = true;
+    document.getElementById(`save-${mode}-btn`).textContent = '✓ Saved';
+}
+
+function renderDeck(mode) {
+    const deck = state.decks[mode];
+    const container = document.getElementById(`${mode}-deck`);
+    const count = document.getElementById(`${mode}-deck-count`);
+    count.textContent = `${deck.length} card${deck.length !== 1 ? 's' : ''}`;
+
+    if (deck.length === 0) {
+        container.innerHTML = '<div class="empty-deck">No cards saved yet.</div>';
+        return;
+    }
+
+    container.innerHTML = deck.map(card => `
+        <div class="deck-item" onclick="loadCard('${mode}', ${card.id})">
+            <button class="deck-item-delete" onclick="event.stopPropagation(); deleteCard('${mode}', ${card.id})">✕</button>
+            <p class="deck-item-mode">${mode === 'vocab' ? '📖 Vocabulary' : mode === 'math' ? '∑ Mathematics' : '⏳ History'}</p>
+            <p class="deck-item-word">${card.word}</p>
+        </div>
+    `).join('');
+}
+
+function deleteCard(mode, id) {
+    state.decks[mode] = state.decks[mode].filter(c => c.id !== id);
+    saveDecks();
+    renderDeck(mode);
+}
+
+function loadCard(mode, id) {
+    const card = state.decks[mode].find(c => c.id === id);
+    if (!card) return;
+    state.currentCard[mode] = card;
+    if (mode === 'vocab')        renderVocabCard(card.word, card.data);
+    else if (mode === 'math')    renderMathCard(card.word, card.data);
+    else if (mode === 'history') renderHistoryCard(card.word, card.data);
+    document.getElementById(`card-area-${mode}`).style.display = 'block';
+    document.getElementById(`card-${mode}`).classList.remove('flipped');
+    document.getElementById(`save-${mode}-btn`).disabled = true;
+    document.getElementById(`save-${mode}-btn`).textContent = '✓ In Deck';
+}
+
+// ─── TIMELINE ─────────────────────────────────────────────
+function renderTimeline() {
+    const cards = [...state.decks.history].sort((a, b) => (a.data.year_num || 0) - (b.data.year_num || 0));
+    const container = document.getElementById('timeline-container');
+    if (cards.length === 0) {
+        container.innerHTML = '<div class="empty-timeline">No history cards yet. Generate some flashcards and save them to build your timetable.</div>';
+        return;
+    }
+    container.innerHTML = cards.map((card, i) => `
+        <div class="timeline-item" style="animation-delay:${i * 0.07}s">
+            <div class="timeline-dot"></div>
+            <p class="timeline-date">${card.data.date || 'Date unknown'}</p>
+            <p class="timeline-event">${card.word}</p>
+            <p class="timeline-detail">${card.data.summary || ''}</p>
+        </div>
+    `).join('');
+}
+
+// ─── UTILS ────────────────────────────────────────────────
+function showLoading(mode, show) {
+    const el = document.getElementById(`loading-${mode}`);
+    el.classList.toggle('active', show);
+    const btn = mode === 'vocab'
+        ? document.getElementById('vocab-generate-btn')
+        : document.querySelector(`#panel-${mode} .generate-btn`);
+    if (btn) btn.disabled = show;
+}
+
+function showError(mode, msg) {
+    const el = document.getElementById(`error-${mode}`);
+    el.textContent = msg;
+    el.classList.add('active');
+}
+
+function clearError(mode) {
+    const el = document.getElementById(`error-${mode}`);
+    el.classList.remove('active');
+}
+
+// ─── Enter key support ────────────────────────────────────
+document.getElementById('vocab-input').addEventListener('keydown', e => { if(e.key==='Enter') generateVocab(); });
+document.getElementById('vocab-manual-word').addEventListener('keydown', e => { if(e.key==='Enter') createManualVocabCard(); });
+document.getElementById('math-input').addEventListener('keydown', e => { if(e.key==='Enter') generateMath(); });
+document.getElementById('history-input').addEventListener('keydown', e => { if(e.key==='Enter') generateHistory(); });
+
+// ─── PERSISTENCE ──────────────────────────────────────────
+function saveDecks() {
+    localStorage.setItem('vmc_decks', JSON.stringify(state.decks));
+}
+
+function loadDecks() {
+    try {
+        const saved = localStorage.getItem('vmc_decks');
+        if (saved) state.decks = JSON.parse(saved);
+    } catch(e) { console.error('Failed to load decks', e); }
+}
+
+// Init
+function init() {
+    loadDecks();
+    initApiKeyUI();
+    ['vocab','math','history'].forEach(m => renderDeck(m));
+}
+
+if (typeof puter !== 'undefined') {
+    init();
+} else {
+    window.addEventListener('load', init);
+}
+</script>
+</body>
+</html>
